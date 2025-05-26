@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Social Feed</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #eef1f5; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #0003e1; margin: 0; padding: 0; }
     .container { max-width: 1200px; margin: auto; padding: 20px; display: flex; gap: 20px; }
     .left, .right { flex: 1; }
     .center { flex: 2; background: #fff; padding: 20px; border-radius: 10px; }
@@ -26,12 +26,13 @@
   <div class="container">
     <div class="left">
       <div id="auth">
-        <button id="login">Login</button>
-        <button id="signup">Sign Up</button>
-        <button id="logout" style="display:none;">Logout</button>
         <input type="text" id="displayName" placeholder="Display Name" />
         <input type="email" id="email" placeholder="Email" />
         <input type="password" id="password" placeholder="Password" />
+        <button id="login">Login</button>
+        <button id="signup">Sign Up</button>
+        <button id="logout" style="display:none;">Logout</button>
+        
       </div>
       <h4>👥 Users</h4>
       <div id="user-list"></div>
