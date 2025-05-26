@@ -4,38 +4,48 @@
   <meta charset="UTF-8">
   <title>Social Feed</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
-    textarea, input { width: 100%; padding: 10px; margin: 10px 0; }
-    button { padding: 10px 15px; margin-right: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; background: #eef1f5; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: auto; padding: 20px; display: flex; gap: 20px; }
+    .left, .right { flex: 1; }
+    .center { flex: 2; background: #fff; padding: 20px; border-radius: 10px; }
+    textarea, input[type="url"], input[type="text"], input[type="password"], input[type="email"] {
+      width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    button { padding: 10px 15px; margin-top: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background: #0056b3; }
     .post { border-top: 1px solid #ccc; margin-top: 20px; padding-top: 10px; }
-    .actions button { margin-right: 8px; }
+    .actions button { margin-right: 10px; }
     .comment { margin-left: 10px; font-size: 0.9rem; color: #333; }
     .comment-input { width: 80%; padding: 6px; margin-top: 5px; }
+    .share-options a { margin-right: 10px; display: inline-block; }
+    #user-list img { border-radius: 50%; margin-right: 5px; }
   </style>
 </head>
 <body>
+  <img src="https://placehold.co/1200x200?text=Welcome+to+Social+Feed" style="width:100%; display:block;">
   <div class="container">
-    <h2>Simple Social Feed</h2>
-
-    <!-- Auth Section -->
-    <div id="auth">
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button id="login">Login</button>
-      <button id="signup">Sign Up</button>
-      <button id="logout" style="display:none;">Logout</button>
+    <div class="left">
+      <div id="auth">
+        <input type="text" id="displayName" placeholder="Display Name" />
+        <input type="email" id="email" placeholder="Email" />
+        <input type="password" id="password" placeholder="Password" />
+        <button id="login">Login</button>
+        <button id="signup">Sign Up</button>
+        <button id="logout" style="display:none;">Logout</button>
+      </div>
+      <h4>👥 Users</h4>
+      <div id="user-list"></div>
     </div>
-
-    <!-- Post Form -->
-    <form id="post-form" style="display:none;">
-      <textarea id="post-text" placeholder="What's on your mind?" required></textarea>
-      <button type="submit">Post</button>
-    </form>
-
-    <h3>Latest Posts</h3>
-    <div id="posts"></div>
+    <div class="center">
+      <form id="post-form" style="display:none;">
+        <textarea id="post-text" placeholder="What's on your mind?" required></textarea>
+        <input type="url" id="post-image" placeholder="Image URL (optional)">
+        <button type="submit">Post</button>
+      </form>
+      <h3>📝 Latest Posts</h3>
+      <div id="posts"></div>
+    </div>
+    <div class="right"></div>
   </div>
 
   <!-- Firebase SDKs -->
@@ -44,7 +54,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
       authDomain: "weminthu-2b12a.firebaseapp.com",
@@ -59,117 +68,104 @@
 
     let currentUser = null;
 
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-    const loginBtn = document.getElementById('login');
-    const signupBtn = document.getElementById('signup');
-    const logoutBtn = document.getElementById('logout');
-    const postForm = document.getElementById('post-form');
-    const postText = document.getElementById('post-text');
-    const postsDiv = document.getElementById('posts');
+    const $ = id => document.getElementById(id);
+    const postsDiv = $("posts"), userListDiv = $("user-list");
 
     auth.onAuthStateChanged(user => {
       currentUser = user;
-      postForm.style.display = user ? 'block' : 'none';
-      logoutBtn.style.display = user ? 'inline-block' : 'none';
-      loginBtn.style.display = user ? 'none' : 'inline-block';
-      signupBtn.style.display = user ? 'none' : 'inline-block';
+      $("post-form").style.display = user ? 'block' : 'none';
+      $("logout").style.display = user ? 'inline-block' : 'none';
+      $("login").style.display = $("signup").style.display = user ? 'none' : 'inline-block';
     });
 
-    loginBtn.onclick = () => {
-      auth.signInWithEmailAndPassword(email.value, password.value)
-        .then(() => alert("Logged in"))
-        .catch(err => alert(err.message));
+    $("signup").onclick = async () => {
+      const name = $("displayName").value;
+      const email = $("email").value;
+      const pass = $("password").value;
+      const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+      await userCred.user.updateProfile({ displayName: name });
+      await db.collection("users").doc(userCred.user.uid).set({
+        name, email, photo: `https://api.dicebear.com/6.x/initials/svg?seed=${name}`
+      });
     };
 
-    signupBtn.onclick = () => {
-      auth.createUserWithEmailAndPassword(email.value, password.value)
-        .then(() => alert("Registered"))
-        .catch(err => alert(err.message));
-    };
+    $("login").onclick = () => auth.signInWithEmailAndPassword($("email").value, $("password").value);
+    $("logout").onclick = () => auth.signOut();
 
-    logoutBtn.onclick = () => auth.signOut();
-
-    postForm.onsubmit = async (e) => {
+    $("post-form").onsubmit = async e => {
       e.preventDefault();
-      const text = postText.value.trim();
+      const text = $("post-text").value, img = $("post-image").value;
       if (!text || !currentUser) return;
       await db.collection("posts").add({
-        text,
-        uid: currentUser.uid,
-        author: currentUser.email,
-        likes: 0,
-        comments: [],
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        text, image: img, uid: currentUser.uid,
+        authorName: currentUser.displayName, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        likes: 0, comments: []
       });
-      postText.value = "";
+      $("post-text").value = ""; $("post-image").value = "";
     };
 
-    function renderPosts() {
-      db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        postsDiv.innerHTML = "";
-        snapshot.forEach(doc => {
-          const d = doc.data();
-          const isOwner = currentUser && currentUser.uid === d.uid;
-          const div = document.createElement("div");
-          div.className = "post";
-          div.innerHTML = `
-            <p><strong>${d.author || 'anonymous'}</strong>: ${d.text}</p>
-            <div class="actions">
-              <button onclick="likePost('${doc.id}')">❤️ Like (${d.likes || 0})</button>
-              <button onclick="sharePost('${doc.id}')">🔗 Share</button>
-              ${isOwner ? `<button onclick="editPost('${doc.id}', '${d.text.replace(/'/g, "\\'")}')">✏️ Edit</button>
-              <button onclick="deletePost('${doc.id}')">🗑️ Delete</button>` : ''}
-            </div>
-            <div class="comments">
-              ${(d.comments || []).map(c => `<div class="comment">💬 ${c}</div>`).join("")}
-              <input class="comment-input" data-id="${doc.id}" placeholder="Write a comment..." onkeypress="handleComment(event)">
-            </div>
-          `;
-          postsDiv.appendChild(div);
-        });
+    db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+      postsDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const isOwner = currentUser && currentUser.uid === d.uid;
+        const date = d.createdAt?.toDate().toLocaleString() || "";
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `
+          <p><strong>${d.authorName || 'Anonymous'}</strong> <small>${date}</small><br>${d.text}</p>
+          ${d.image ? `<img src="${d.image}" style="max-width:100%; margin-top:10px;">` : ""}
+          <div class="actions">
+            <button onclick="like('${doc.id}')">❤️ Like (${d.likes || 0})</button>
+            <button onclick="toggleShare('${doc.id}')">🔗 Share</button>
+            ${isOwner ? `<button onclick="edit('${doc.id}', '${d.text.replace(/'/g, "\'")}')">✏️ Edit</button>
+            <button onclick="del('${doc.id}')">🗑️ Delete</button>` : ""}
+          </div>
+          <div id="share-${doc.id}" class="share-options" style="display:none;">
+            <a href="https://www.facebook.com/sharer/sharer.php?u=${location.href}" target="_blank">Facebook</a>
+            <a href="https://t.me/share/url?url=${location.href}" target="_blank">Telegram</a>
+            <a href="viber://forward?text=${location.href}">Viber</a>
+          </div>
+          <div class="comments">
+            ${(d.comments || []).map(c => `<div class='comment'>💬 ${c}</div>`).join('')}
+            <input class='comment-input' placeholder='Write a comment...' onkeypress='comment(event, "${doc.id}")'>
+          </div>`;
+        postsDiv.appendChild(div);
       });
-    }
+    });
 
-    renderPosts();
-
-    function likePost(id) {
+    function like(id) {
       const ref = db.collection("posts").doc(id);
-      ref.get().then(snap => {
-        const likes = snap.data().likes || 0;
-        ref.update({ likes: likes + 1 });
-      });
+      ref.get().then(snap => ref.update({ likes: (snap.data().likes || 0) + 1 }));
     }
-
-    function sharePost(id) {
-      const url = `${location.origin}/?post=${id}`;
-      navigator.clipboard.writeText(url).then(() => alert("Link copied!"));
-    }
-
-    function editPost(id, text) {
+    function edit(id, text) {
       const newText = prompt("Edit your post:", text);
       if (newText) db.collection("posts").doc(id).update({ text: newText });
     }
-
-    function deletePost(id) {
-      if (confirm("Delete this post?")) {
-        db.collection("posts").doc(id).delete();
-      }
+    function del(id) {
+      if (confirm("Delete this post?")) db.collection("posts").doc(id).delete();
     }
-
-    function handleComment(e) {
+    function comment(e, id) {
       if (e.key === "Enter") {
-        const input = e.target;
-        const comment = input.value.trim();
-        const id = input.dataset.id;
-        if (comment) {
-          db.collection("posts").doc(id).update({
-            comments: firebase.firestore.FieldValue.arrayUnion(comment)
-          });
-          input.value = "";
+        const text = e.target.value.trim();
+        if (text) {
+          db.collection("posts").doc(id).update({ comments: firebase.firestore.FieldValue.arrayUnion(text) });
+          e.target.value = "";
         }
       }
     }
+    function toggleShare(id) {
+      document.querySelectorAll('.share-options').forEach(el => el.style.display = 'none');
+      document.getElementById('share-' + id).style.display = 'block';
+    }
+
+    db.collection("users").onSnapshot(snap => {
+      userListDiv.innerHTML = "";
+      snap.forEach(doc => {
+        const u = doc.data();
+        userListDiv.innerHTML += `<div><img src="${u.photo}" width="24"> ${u.name}</div>`;
+      });
+    });
   </script>
 </body>
 </html>
