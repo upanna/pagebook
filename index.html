@@ -1,22 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Social Feed</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+    textarea, input { width: 100%; padding: 10px; margin: 10px 0; }
+    button { padding: 10px 15px; margin-right: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .post { border-top: 1px solid #ccc; margin-top: 20px; padding-top: 10px; }
+    .actions button { margin-right: 8px; }
+    .comment { margin-left: 10px; font-size: 0.9rem; color: #333; }
+    .comment-input { width: 80%; padding: 6px; margin-top: 5px; }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Simple Social Feed</h1>
+    <h2>Simple Social Feed</h2>
 
     <!-- Auth Section -->
-    <div id="auth-section">
+    <div id="auth">
       <input type="email" id="email" placeholder="Email" />
       <input type="password" id="password" placeholder="Password" />
-      <button id="login-btn">Login</button>
-      <button id="signup-btn">Sign Up</button>
-      <button id="logout-btn" style="display:none;">Logout</button>
+      <button id="login">Login</button>
+      <button id="signup">Sign Up</button>
+      <button id="logout" style="display:none;">Logout</button>
     </div>
 
     <!-- Post Form -->
@@ -25,11 +34,142 @@
       <button type="submit">Post</button>
     </form>
 
-    <!-- Post Feed -->
-    <h2>Latest Posts</h2>
-    <div id="posts-container"></div>
+    <h3>Latest Posts</h3>
+    <div id="posts"></div>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
+      authDomain: "weminthu-2b12a.firebaseapp.com",
+      projectId: "weminthu-2b12a",
+      storageBucket: "weminthu-2b12a.appspot.com",
+      messagingSenderId: "181634107230",
+      appId: "1:181634107230:web:9fb4cfb725b1b5cd1bf1cf"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const loginBtn = document.getElementById('login');
+    const signupBtn = document.getElementById('signup');
+    const logoutBtn = document.getElementById('logout');
+    const postForm = document.getElementById('post-form');
+    const postText = document.getElementById('post-text');
+    const postsDiv = document.getElementById('posts');
+
+    auth.onAuthStateChanged(user => {
+      currentUser = user;
+      postForm.style.display = user ? 'block' : 'none';
+      logoutBtn.style.display = user ? 'inline-block' : 'none';
+      loginBtn.style.display = user ? 'none' : 'inline-block';
+      signupBtn.style.display = user ? 'none' : 'inline-block';
+    });
+
+    loginBtn.onclick = () => {
+      auth.signInWithEmailAndPassword(email.value, password.value)
+        .then(() => alert("Logged in"))
+        .catch(err => alert(err.message));
+    };
+
+    signupBtn.onclick = () => {
+      auth.createUserWithEmailAndPassword(email.value, password.value)
+        .then(() => alert("Registered"))
+        .catch(err => alert(err.message));
+    };
+
+    logoutBtn.onclick = () => auth.signOut();
+
+    postForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = postText.value.trim();
+      if (!text || !currentUser) return;
+      await db.collection("posts").add({
+        text,
+        uid: currentUser.uid,
+        author: currentUser.email,
+        likes: 0,
+        comments: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      postText.value = "";
+    };
+
+    function renderPosts() {
+      db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        postsDiv.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const isOwner = currentUser && currentUser.uid === d.uid;
+          const div = document.createElement("div");
+          div.className = "post";
+          div.innerHTML = `
+            <p><strong>${d.author || 'anonymous'}</strong>: ${d.text}</p>
+            <div class="actions">
+              <button onclick="likePost('${doc.id}')">❤️ Like (${d.likes || 0})</button>
+              <button onclick="sharePost('${doc.id}')">🔗 Share</button>
+              ${isOwner ? `<button onclick="editPost('${doc.id}', '${d.text.replace(/'/g, "\\'")}')">✏️ Edit</button>
+              <button onclick="deletePost('${doc.id}')">🗑️ Delete</button>` : ''}
+            </div>
+            <div class="comments">
+              ${(d.comments || []).map(c => `<div class="comment">💬 ${c}</div>`).join("")}
+              <input class="comment-input" data-id="${doc.id}" placeholder="Write a comment..." onkeypress="handleComment(event)">
+            </div>
+          `;
+          postsDiv.appendChild(div);
+        });
+      });
+    }
+
+    renderPosts();
+
+    function likePost(id) {
+      const ref = db.collection("posts").doc(id);
+      ref.get().then(snap => {
+        const likes = snap.data().likes || 0;
+        ref.update({ likes: likes + 1 });
+      });
+    }
+
+    function sharePost(id) {
+      const url = `${location.origin}/?post=${id}`;
+      navigator.clipboard.writeText(url).then(() => alert("Link copied!"));
+    }
+
+    function editPost(id, text) {
+      const newText = prompt("Edit your post:", text);
+      if (newText) db.collection("posts").doc(id).update({ text: newText });
+    }
+
+    function deletePost(id) {
+      if (confirm("Delete this post?")) {
+        db.collection("posts").doc(id).delete();
+      }
+    }
+
+    function handleComment(e) {
+      if (e.key === "Enter") {
+        const input = e.target;
+        const comment = input.value.trim();
+        const id = input.dataset.id;
+        if (comment) {
+          db.collection("posts").doc(id).update({
+            comments: firebase.firestore.FieldValue.arrayUnion(comment)
+          });
+          input.value = "";
+        }
+      }
+    }
+  </script>
 </body>
 </html>
