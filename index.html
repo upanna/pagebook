@@ -1,83 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Page Book</title>
+  <meta charset="UTF-8" />
+  <title>PageBook</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #eef1f5; margin: 0; padding: 0; }
-    .container { max-width: 1200px; margin: auto; padding: 20px; display: flex; gap: 20px; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { display: flex; max-width: 1400px; margin: auto; padding: 20px; gap: 20px; }
     .left, .right { flex: 1; }
-    .center { flex: 2; background: #fff; padding: 20px; border-radius: 10px; }
-    textarea, input[type="url"], input[type="text"], input[type="password"], input[type="email"] {
-      width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px;
-    }
-    button { padding: 10px 15px; margin-top: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .center { flex: 2; background: white; padding: 20px; border-radius: 10px; }
+    input, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background: #0056b3; }
-    .post { border-top: 1px solid #ccc; margin-top: 20px; padding-top: 10px; }
-    .actions button { margin-right: 10px; }
-    .comment { margin-left: 10px; font-size: 0.9rem; color: #333; }
+    .post { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; }
+    .comment { margin-left: 10px; font-size: 0.9em; }
     .comment-input { width: 80%; padding: 6px; margin-top: 5px; }
-    .share-options a { margin-right: 10px; display: inline-block; }
-    #user-list img { border-radius: 50%; margin-right: 5px; }
+    #user-list img { border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+    .media iframe, .media audio { width: 100%; margin-top: 10px; }
+    .hidden { display: none; }
+    .link-button { background: none; border: none; color: blue; text-decoration: underline; cursor: pointer; padding: 0; }
   </style>
 </head>
 <body>
-  <img src="https://placehold.co/1200x200?text=Welcome+to+Page+Book" style="width:100%; display:block;">
+  <img src="https://placehold.co/1400x200?text=Welcome+to+PageBook" style="width:100%; display:block;" />
+
   <div class="container">
     <div class="left">
       <div id="auth">
-        <input type="text" id="displayName" placeholder="Display Name" />
+        <input type="text" id="displayName" placeholder="Display Name" class="hidden" />
         <input type="email" id="email" placeholder="Email" />
         <input type="password" id="password" placeholder="Password" />
         <button id="login">Login</button>
-        <button id="signup">Sign Up</button>
-        <button id="logout" style="display:none;">Logout</button>
-        
+        <button id="signup" class="hidden">Register</button>
+        <p id="toggle-auth">Don't have an account? <button class="link-button" onclick="toggleSignup(true)">Sign Up</button></p>
+        <button id="logout" class="hidden">Logout</button>
       </div>
       <h4>👥 Users</h4>
       <div id="user-list"></div>
+
+      <div class="media">
+        <h4>📺 Myanmar TV (24/7)</h4>
+        <iframe src="'https://www.youtube.com/watch?v=ruHUSKqLBY8'" height="200" allowfullscreen></iframe>
+        <h4>📻 FM Radio</h4>
+        <audio controls>
+          <source src="https://stream.zeno.fm/pxn7p5cbm48uv" type="audio/mpeg">
+        </audio>
+      </div>
     </div>
+
     <div class="center">
-      <form id="post-form" style="display:none;">
-        <textarea id="post-text" placeholder="What's on your mind?" required></textarea>
-        <input type="url" id="post-image" placeholder="Image URL (optional)">
+      <input type="text" id="search" placeholder="Search by Title or Author">
+      <form id="post-form" class="hidden">
+        <input type="text" id="post-title" placeholder="Post Title" required />
+        <input type="text" id="post-name" placeholder="Your Name" required />
+        <textarea id="post-text" placeholder="Write your post..." required></textarea>
+        <input type="url" id="post-image" placeholder="Image URL (optional)" />
         <button type="submit">Post</button>
       </form>
-      <h3>📝 Latest Posts</h3>
       <div id="posts"></div>
     </div>
-    <div class="right"></div>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
       authDomain: "weminthu-2b12a.firebaseapp.com",
-      projectId: "weminthu-2b12a",
-      storageBucket: "weminthu-2b12a.appspot.com",
-      messagingSenderId: "181634107230",
-      appId: "1:181634107230:web:9fb4cfb725b1b5cd1bf1cf"
+      projectId: "weminthu-2b12a"
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let currentUser = null;
-
     const $ = id => document.getElementById(id);
-    const postsDiv = $("posts"), userListDiv = $("user-list");
+    const postsDiv = $("posts"), userList = $("user-list"), search = $("search");
+    let currentUser = null, postsData = [];
 
     auth.onAuthStateChanged(user => {
       currentUser = user;
-      $("post-form").style.display = user ? 'block' : 'none';
-      $("logout").style.display = user ? 'inline-block' : 'none';
-      $("login").style.display = $("signup").style.display = user ? 'none' : 'inline-block';
+      $("post-form").classList.toggle("hidden", !user);
+      $("logout").classList.toggle("hidden", !user);
+      $("login").classList.toggle("hidden", !!user);
+      $("toggle-auth").style.display = user ? "none" : "block";
     });
+
+    $("login").onclick = () => {
+      auth.signInWithEmailAndPassword($("email").value, $("password").value).catch(e => alert(e.message));
+    };
 
     $("signup").onclick = async () => {
       const name = $("displayName").value;
@@ -90,83 +100,101 @@
       });
     };
 
-    $("login").onclick = () => auth.signInWithEmailAndPassword($("email").value, $("password").value);
     $("logout").onclick = () => auth.signOut();
+
+    function toggleSignup(show) {
+      $("displayName").classList.toggle("hidden", !show);
+      $("signup").classList.toggle("hidden", !show);
+      $("login").classList.toggle("hidden", show);
+      $("toggle-auth").innerHTML = show
+        ? 'Already have an account? <button class="link-button" onclick="toggleSignup(false)">Login</button>'
+        : 'Don\'t have an account? <button class="link-button" onclick="toggleSignup(true)">Sign Up</button>';
+    }
 
     $("post-form").onsubmit = async e => {
       e.preventDefault();
-      const text = $("post-text").value, img = $("post-image").value;
-      if (!text || !currentUser) return;
+      const title = $("post-title").value, name = $("post-name").value, text = $("post-text").value, image = $("post-image").value;
+      if (!title || !name || !text) return;
       await db.collection("posts").add({
-        text, image: img, uid: currentUser.uid,
-        authorName: currentUser.displayName, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        title, name, text, image,
+        authorName: currentUser.displayName,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        uid: currentUser.uid,
         likes: 0, comments: []
       });
-      $("post-text").value = ""; $("post-image").value = "";
+      $("post-form").reset();
     };
 
-    db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+    db.collection("users").onSnapshot(snap => {
+      userList.innerHTML = "";
+      snap.forEach(doc => {
+        const u = doc.data();
+        userList.innerHTML += `<div><img src="${u.photo}" width="24"> ${u.name}</div>`;
+      });
+    });
+
+    db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snap => {
+      postsData = [];
+      snap.forEach(doc => postsData.push({ id: doc.id, ...doc.data() }));
+      renderPosts(postsData);
+    });
+
+    search.addEventListener("input", () => {
+      const val = search.value.toLowerCase();
+      renderPosts(postsData.filter(p => p.title.toLowerCase().includes(val) || p.name.toLowerCase().includes(val)));
+    });
+
+    function renderPosts(posts) {
       postsDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const isOwner = currentUser && currentUser.uid === d.uid;
-        const date = d.createdAt?.toDate().toLocaleString() || "";
+      posts.forEach(p => {
+        const isOwner = currentUser && p.uid === currentUser.uid;
+        const time = p.createdAt?.toDate().toLocaleString() || "";
         const div = document.createElement("div");
         div.className = "post";
         div.innerHTML = `
-          <p><strong>${d.authorName || 'Anonymous'}</strong> <small>${date}</small><br>${d.text}</p>
-          ${d.image ? `<img src="${d.image}" style="max-width:100%; margin-top:10px;">` : ""}
-          <div class="actions">
-            <button onclick="like('${doc.id}')">❤️ Like (${d.likes || 0})</button>
-            <button onclick="toggleShare('${doc.id}')">🔗 Share</button>
-            ${isOwner ? `<button onclick="edit('${doc.id}', '${d.text.replace(/'/g, "\'")}')">✏️ Edit</button>
-            <button onclick="del('${doc.id}')">🗑️ Delete</button>` : ""}
-          </div>
-          <div id="share-${doc.id}" class="share-options" style="display:none;">
-            <a href="https://www.facebook.com/sharer/sharer.php?u=${location.href}" target="_blank">Facebook</a>
-            <a href="https://t.me/share/url?url=${location.href}" target="_blank">Telegram</a>
-            <a href="viber://forward?text=${location.href}">Viber</a>
+          <h4>${p.title}</h4>
+          <p><strong>${p.name}</strong> — <small>${time}</small></p>
+          <p>${p.text}</p>
+          ${p.image ? `<img src="${p.image}" style="max-width:100%;">` : ""}
+          <div>
+            <button onclick="like('${p.id}')">❤️ Like (${p.likes || 0})</button>
+            ${isOwner ? `<button onclick="edit('${p.id}', \`${p.text.replace(/`/g, '\`')}\`)">✏️ Edit</button>
+            <button onclick="del('${p.id}')">🗑️ Delete</button>` : ""}
           </div>
           <div class="comments">
-            ${(d.comments || []).map(c => `<div class='comment'>💬 ${c}</div>`).join('')}
-            <input class='comment-input' placeholder='Write a comment...' onkeypress='comment(event, "${doc.id}")'>
-          </div>`;
+            ${(p.comments || []).map(c => `<div class="comment">💬 ${c}</div>`).join("")}
+            <input class="comment-input" placeholder="Write a comment..." onkeypress="comment(event, '${p.id}')">
+          </div>
+        `;
         postsDiv.appendChild(div);
       });
-    });
+    }
 
     function like(id) {
       const ref = db.collection("posts").doc(id);
       ref.get().then(snap => ref.update({ likes: (snap.data().likes || 0) + 1 }));
     }
+
     function edit(id, text) {
       const newText = prompt("Edit your post:", text);
       if (newText) db.collection("posts").doc(id).update({ text: newText });
     }
+
     function del(id) {
       if (confirm("Delete this post?")) db.collection("posts").doc(id).delete();
     }
+
     function comment(e, id) {
       if (e.key === "Enter") {
-        const text = e.target.value.trim();
-        if (text) {
-          db.collection("posts").doc(id).update({ comments: firebase.firestore.FieldValue.arrayUnion(text) });
+        const val = e.target.value.trim();
+        if (val) {
+          db.collection("posts").doc(id).update({
+            comments: firebase.firestore.FieldValue.arrayUnion(val)
+          });
           e.target.value = "";
         }
       }
     }
-    function toggleShare(id) {
-      document.querySelectorAll('.share-options').forEach(el => el.style.display = 'none');
-      document.getElementById('share-' + id).style.display = 'block';
-    }
-
-    db.collection("users").onSnapshot(snap => {
-      userListDiv.innerHTML = "";
-      snap.forEach(doc => {
-        const u = doc.data();
-        userListDiv.innerHTML += `<div><img src="${u.photo}" width="24"> ${u.name}</div>`;
-      });
-    });
   </script>
 </body>
 </html>
