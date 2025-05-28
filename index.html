@@ -211,16 +211,19 @@
     }
 
     auth.onAuthStateChanged(user => {
-      const postForm = document.getElementById("newPost");
-      const logoutBtn = document.getElementById("logoutBtn");
-      if (user) {
-        postForm.style.display = "block";
-        logoutBtn.style.display = "inline-block";
-      } else {
-        postForm.style.display = "none";
-        logoutBtn.style.display = "none";
-      }
-    });
+  const postForm = document.getElementById("newPost");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const loginForm = document.getElementById("loginForm");
+  if (user) {
+    postForm.style.display = "block";
+    logoutBtn.style.display = "inline-block";
+    loginForm.style.display = "none";
+  } else {
+    postForm.style.display = "none";
+    logoutBtn.style.display = "none";
+    loginForm.style.display = "block";
+  }
+});
 
     window.onload = () => {
       showSection('posts');
