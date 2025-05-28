@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PageBook Full</title>
+  <title>PageBook</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -17,105 +17,107 @@
     header {
       background-color: #4267B2;
       color: white;
-      padding: 10px 20px;
+      padding: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    header span {
-      font-size: 1.5em;
-      font-weight: bold;
-    }
-    #logoutBtn, .mobile-menu-btn {
-      margin-left: 10px;
-    }
-    #main {
+    .mobile-menu {
       display: flex;
       flex-wrap: wrap;
-      padding: 20px;
-      gap: 20px;
-    }
-    .left, .center, .right {
+      justify-content: space-around;
       background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
     }
-    .left, .right {
-      width: 100%;
-      max-width: 250px;
-    }
-    .center {
+    .mobile-menu a {
       flex: 1;
-      min-width: 280px;
+      text-align: center;
+      text-decoration: none;
+      color: #4267B2;
+      font-weight: bold;
+      padding: 10px;
+      border-right: 1px solid #eee;
     }
-    .link {
-      color: blue;
-      cursor: pointer;
+    .mobile-menu a:last-child {
+      border-right: none;
     }
-    #auth input, #signup input, #newPost input, #newPost textarea {
-      width: 100%;
-      margin: 5px 0;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    #auth button, #signup button, #logoutBtn, button {
-      padding: 10px 20px;
-      background: #4267B2;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-    .mobile-nav {
+    .section {
       display: none;
-      flex-direction: column;
-      gap: 10px;
-      background: #fff;
       padding: 10px;
     }
-    .mobile-nav.show {
-      display: flex !important;
+    .active-section {
+      display: block;
     }
-    .post {
-      background: #fff;
-      padding: 15px;
-      border: 1px solid #ddd;
+    .post, .live, .photo, .video, .message {
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
       border-radius: 8px;
-      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .post h3 {
-      margin: 0 0 5px;
-      color: #333;
+    .actions span {
+      margin-right: 10px;
+      cursor: pointer;
+      color: #4267B2;
     }
-    .post .actions {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      box-sizing: border-box;
     }
-    .mobile-menu-btn {
-      display: none;
-      background: none;
-      border: none;
-      font-size: 24px;
+    button {
+      background-color: #4267B2;
       color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
       cursor: pointer;
     }
-    @media screen and (max-width: 768px) {
-      .mobile-menu-btn {
-        display: inline;
-      }
-      .mobile-nav {
-        display: none;
-      }
-      .left, .right {
-        display: none !important;
-      }
+    #loginForm {
+      padding: 10px;
     }
   </style>
+</head>
+<body>
+  <header>
+    <div>PageBook</div>
+    <button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
+  </header>
+  <nav class="mobile-menu">
+    <a href="#" onclick="showSection('login')">Login</a>
+    <a href="#" onclick="showSection('posts')">Posts</a>
+    <a href="#" onclick="showSection('lives')">Lives</a>
+    <a href="#" onclick="showSection('photos')">Photos</a>
+    <a href="#" onclick="showSection('videos')">Videos</a>
+    <a href="#" onclick="showSection('messages')">Messages</a>
+  </nav>
+  <div id="login" class="section">
+    <div id="loginForm">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+  <div id="posts" class="section">
+    <div id="newPost" style="display:none;">
+      <input type="text" id="postTitle" placeholder="Post Title">
+      <textarea id="postContent" placeholder="Say something..."></textarea>
+      <input type="text" id="postImageUrl" placeholder="Image URL">
+      <input type="text" id="postVideoUrl" placeholder="Video URL">
+      <button onclick="submitPost()">Post</button>
+    </div>
+    <div id="postList">Loading posts...</div>
+  </div>
+  <div id="lives" class="section"><div id="liveList">Loading live streams...</div></div>
+  <div id="photos" class="section"><div id="photoList">Loading photos...</div></div>
+  <div id="videos" class="section"><div id="videoList">Loading videos...</div></div>
+  <div id="messages" class="section">
+    <p>Messenger Coming Soon</p>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
@@ -129,23 +131,18 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    function toggleMobileMenu() {
-      document.getElementById('mobileNav').classList.toggle('show');
-    }
-    function closeMobileMenu() {
-      document.getElementById('mobileNav').classList.remove('show');
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
+      document.getElementById(id).classList.add('active-section');
     }
 
     function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password).catch(error => alert(error.message));
+      auth.signInWithEmailAndPassword(email, password).catch(e => alert(e.message));
     }
     function logout() {
       auth.signOut();
-    }
-    function showSignup() {
-      document.getElementById("signup").style.display = "block";
     }
     function submitPost() {
       const title = document.getElementById("postTitle").value;
@@ -153,145 +150,85 @@
       const imageUrl = document.getElementById("postImageUrl").value;
       const videoUrl = document.getElementById("postVideoUrl").value;
       const user = auth.currentUser;
-      if (!user) return alert("Login first");
+      if (!user) return alert("Please login first");
       db.collection("posts").add({
         title, content, imageUrl, videoUrl,
-        name: user.displayName || user.email,
+        name: user.email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        alert("Posted!");
-        document.getElementById("postTitle").value = "";
-        document.getElementById("postContent").value = "";
-        document.getElementById("postImageUrl").value = "";
-        document.getElementById("postVideoUrl").value = "";
-      });
+      }).then(() => alert("Posted!"));
     }
+
     function loadPosts() {
-      const postsContainer = document.getElementById("posts");
+      const list = document.getElementById("postList");
       db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        postsContainer.innerHTML = "";
+        list.innerHTML = "";
         snapshot.forEach(doc => {
-          const post = doc.data();
-          postsContainer.innerHTML += `
-            <div class="post">
-              <h3>${post.title || "Untitled"} - by ${post.name || "Anonymous"}</h3>
-              <p>${post.content || "No content."}</p>
-              ${post.imageUrl ? `<img src="${post.imageUrl}" style="max-width:100%; border-radius:10px;">` : ""}
-              ${post.videoUrl ? `<video width="100%" controls><source src="${post.videoUrl}" type="video/mp4"></video>` : ""}
-              <div class="actions">
-                <span>Like</span>
-                <span>Comment</span>
-                <span>Send</span>
-                <span>Share</span>
-              </div>
-            </div>
-          `;
+          const d = doc.data();
+          list.innerHTML += `<div class='post'><h3>${d.title}</h3><p>${d.content}</p>
+          ${d.imageUrl ? `<img src='${d.imageUrl}' width='100%'>` : ''}
+          ${d.videoUrl ? `<video width='100%' controls src='${d.videoUrl}'></video>` : ''}
+          <div class='actions'>
+          <span onclick="alert('Liked!')">Like</span>
+          <span onclick="alert('Comment!')">Comment</span>
+          <span onclick="alert('Sent!')">Send</span>
+          <span onclick="alert('Shared!')">Share</span>
+          </div></div>`
         });
       });
     }
-    function loadLives() {
-      const liveContainer = document.getElementById("liveStreams");
-      db.collection("lives").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        liveContainer.innerHTML = "";
-        snapshot.forEach(doc => {
-          const live = doc.data();
-          liveContainer.innerHTML += `
-            <div class="post">
-              <h3>🎥 ${live.title || "Live Stream"} - ${live.name || "User"}</h3>
-              <iframe width="100%" height="200" src="${live.videoUrl}" frameborder="0" allowfullscreen></iframe>
-            </div>
-          `;
-        });
-      });
-    }
+
     function loadPhotos() {
-      const postsContainer = document.getElementById("posts");
+      const list = document.getElementById("photoList");
       db.collection("posts").where("imageUrl", "!=", "").onSnapshot(snapshot => {
-        postsContainer.innerHTML = "";
+        list.innerHTML = "";
         snapshot.forEach(doc => {
-          const post = doc.data();
-          postsContainer.innerHTML += `
-            <div class="post">
-              <h3>${post.title || "Photo"} - by ${post.name || "Anonymous"}</h3>
-              <img src="${post.imageUrl}" style="max-width:100%; border-radius:10px;">
-            </div>
-          `;
+          const d = doc.data();
+          list.innerHTML += `<div class='photo'><img src='${d.imageUrl}' width='100%'></div>`
         });
       });
     }
+
     function loadVideos() {
-      const postsContainer = document.getElementById("posts");
+      const list = document.getElementById("videoList");
       db.collection("posts").where("videoUrl", "!=", "").onSnapshot(snapshot => {
-        postsContainer.innerHTML = "";
+        list.innerHTML = "";
         snapshot.forEach(doc => {
-          const post = doc.data();
-          postsContainer.innerHTML += `
-            <div class="post">
-              <h3>${post.title || "Video"} - by ${post.name || "Anonymous"}</h3>
-              <video width="100%" controls>
-                <source src="${post.videoUrl}" type="video/mp4">
-              </video>
-            </div>
-          `;
+          const d = doc.data();
+          list.innerHTML += `<div class='video'><video width='100%' controls src='${d.videoUrl}'></video></div>`
         });
       });
     }
+
+    function loadLives() {
+      const list = document.getElementById("liveList");
+      db.collection("lives").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        list.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          list.innerHTML += `<div class='live'><iframe width='100%' height='200' src='${d.videoUrl}' frameborder='0' allowfullscreen></iframe></div>`
+        });
+      });
+    }
+
     auth.onAuthStateChanged(user => {
-      document.getElementById("auth").style.display = user ? "none" : "block";
-      document.getElementById("logoutBtn").style.display = user ? "inline-block" : "none";
-      document.getElementById("newPost").style.display = user ? "block" : "none";
+      const postForm = document.getElementById("newPost");
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (user) {
+        postForm.style.display = "block";
+        logoutBtn.style.display = "inline-block";
+      } else {
+        postForm.style.display = "none";
+        logoutBtn.style.display = "none";
+      }
     });
+
     window.onload = () => {
+      showSection('posts');
       loadPosts();
+      loadLives();
+      loadPhotos();
+      loadVideos();
     };
   </script>
-</head>
-<body>
-  <header>
-    <span>PageBook</span>
-    <div>
-      <button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
-      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">&#9776;</button>
-    </div>
-  </header>
-  <div id="mobileNav" class="mobile-nav">
-    <a href="#" onclick="document.querySelector('.left').style.display='block'; closeMobileMenu(); return false;">Login</a>
-    <a href="#" onclick="loadPosts(); closeMobileMenu(); return false;">Posts</a>
-    <a href="#" onclick="loadLives(); closeMobileMenu(); return false;">Lives</a>
-    <a href="#" onclick="loadPhotos(); closeMobileMenu(); return false;">Photos</a>
-    <a href="#" onclick="loadVideos(); closeMobileMenu(); return false;">Videos</a>
-  </div>
-  <div id="main">
-    <div class="left">
-      <h3>Login</h3>
-      <div id="auth">
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Login</button>
-        <p>Don't have an account? <span class="link" onclick="showSignup()">Sign Up</span></p>
-        <div id="signup" style="display:none;">
-          <input type="text" id="displayName" placeholder="Display Name">
-          <input type="email" id="signupEmail" placeholder="Email">
-          <input type="password" id="signupPassword" placeholder="Password">
-          <button onclick="register()">Register</button>
-        </div>
-      </div>
-    </div>
-    <div class="center">
-      <div id="newPost" style="display:none;">
-        <h4>Create Post</h4>
-        <input type="text" id="postTitle" placeholder="Title">
-        <textarea id="postContent" placeholder="What's on your mind?"></textarea>
-        <input type="text" id="postImageUrl" placeholder="Image URL (optional)">
-        <input type="text" id="postVideoUrl" placeholder="Video URL (optional)">
-        <button onclick="submitPost()">Post</button>
-      </div>
-      <div id="posts">Loading posts...</div>
-    </div>
-    <div class="right">
-      <h3>Live Player</h3>
-      <div id="liveStreams">Loading live streams...</div>
-    </div>
-  </div>
 </body>
 </html>
