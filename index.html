@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PageBook Full</title>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -15,7 +14,6 @@
       padding: 0;
       background-color: #f0f2f5;
     }
-
     header {
       background-color: #4267B2;
       color: white;
@@ -23,48 +21,39 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      position: relative;
     }
-
     header span {
       font-size: 1.5em;
       font-weight: bold;
     }
-
     #logoutBtn, .mobile-menu-btn {
       margin-left: 10px;
     }
-
     #main {
       display: flex;
       flex-wrap: wrap;
       padding: 20px;
       gap: 20px;
     }
-
     .left, .center, .right {
       background: white;
       padding: 15px;
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-
     .left, .right {
       width: 100%;
       max-width: 250px;
     }
-
     .center {
       flex: 1;
       min-width: 280px;
     }
-
     .link {
       color: blue;
       cursor: pointer;
     }
-
-    #auth input, #signup input {
+    #auth input, #signup input, #newPost input, #newPost textarea {
       width: 100%;
       margin: 5px 0;
       padding: 8px;
@@ -72,7 +61,6 @@
       border-radius: 4px;
       box-sizing: border-box;
     }
-
     #auth button, #signup button, #logoutBtn, button {
       padding: 10px 20px;
       background: #4267B2;
@@ -82,7 +70,6 @@
       cursor: pointer;
       width: 100%;
     }
-
     .mobile-nav {
       display: none;
       flex-direction: column;
@@ -90,11 +77,9 @@
       background: #fff;
       padding: 10px;
     }
-
     .mobile-nav.show {
       display: flex !important;
     }
-
     .post {
       background: #fff;
       padding: 15px;
@@ -102,18 +87,15 @@
       border-radius: 8px;
       margin-bottom: 15px;
     }
-
     .post h3 {
       margin: 0 0 5px;
       color: #333;
     }
-
     .post .actions {
       margin-top: 10px;
       display: flex;
       gap: 10px;
     }
-
     .mobile-menu-btn {
       display: none;
       background: none;
@@ -122,33 +104,27 @@
       color: white;
       cursor: pointer;
     }
-
     @media screen and (max-width: 768px) {
       .mobile-menu-btn {
         display: inline;
       }
-
       .mobile-nav {
         display: none;
       }
-
       .left, .right {
         display: none !important;
       }
     }
   </style>
   <script>
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
-  authDomain: "weminthu-2b12a.firebaseapp.com",
-  databaseURL: "https://weminthu-2b12a-default-rtdb.firebaseio.com",
-  projectId: "weminthu-2b12a",
-  storageBucket: "weminthu-2b12a.firebasestorage.app",
-  messagingSenderId: "181634107230",
-  appId: "1:181634107230:web:9fb4cfb725b1b5cd1bf1cf",
-  measurementId: "G-VFYC7DEVM1"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
+      authDomain: "weminthu-2b12a.firebaseapp.com",
+      projectId: "weminthu-2b12a",
+      storageBucket: "weminthu-2b12a.appspot.com",
+      messagingSenderId: "181634107230",
+      appId: "1:181634107230:web:9fb4cfb725b1b5cd1bf1cf"
+    };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -156,21 +132,40 @@ const firebaseConfig = {
     function toggleMobileMenu() {
       document.getElementById('mobileNav').classList.toggle('show');
     }
+    function closeMobileMenu() {
+      document.getElementById('mobileNav').classList.remove('show');
+    }
 
     function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       auth.signInWithEmailAndPassword(email, password).catch(error => alert(error.message));
     }
-
     function logout() {
       auth.signOut();
     }
-
     function showSignup() {
       document.getElementById("signup").style.display = "block";
     }
-
+    function submitPost() {
+      const title = document.getElementById("postTitle").value;
+      const content = document.getElementById("postContent").value;
+      const imageUrl = document.getElementById("postImageUrl").value;
+      const videoUrl = document.getElementById("postVideoUrl").value;
+      const user = auth.currentUser;
+      if (!user) return alert("Login first");
+      db.collection("posts").add({
+        title, content, imageUrl, videoUrl,
+        name: user.displayName || user.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert("Posted!");
+        document.getElementById("postTitle").value = "";
+        document.getElementById("postContent").value = "";
+        document.getElementById("postImageUrl").value = "";
+        document.getElementById("postVideoUrl").value = "";
+      });
+    }
     function loadPosts() {
       const postsContainer = document.getElementById("posts");
       db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
@@ -182,6 +177,7 @@ const firebaseConfig = {
               <h3>${post.title || "Untitled"} - by ${post.name || "Anonymous"}</h3>
               <p>${post.content || "No content."}</p>
               ${post.imageUrl ? `<img src="${post.imageUrl}" style="max-width:100%; border-radius:10px;">` : ""}
+              ${post.videoUrl ? `<video width="100%" controls><source src="${post.videoUrl}" type="video/mp4"></video>` : ""}
               <div class="actions">
                 <span>Like</span>
                 <span>Comment</span>
@@ -193,12 +189,58 @@ const firebaseConfig = {
         });
       });
     }
-
+    function loadLives() {
+      const liveContainer = document.getElementById("liveStreams");
+      db.collection("lives").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        liveContainer.innerHTML = "";
+        snapshot.forEach(doc => {
+          const live = doc.data();
+          liveContainer.innerHTML += `
+            <div class="post">
+              <h3>🎥 ${live.title || "Live Stream"} - ${live.name || "User"}</h3>
+              <iframe width="100%" height="200" src="${live.videoUrl}" frameborder="0" allowfullscreen></iframe>
+            </div>
+          `;
+        });
+      });
+    }
+    function loadPhotos() {
+      const postsContainer = document.getElementById("posts");
+      db.collection("posts").where("imageUrl", "!=", "").onSnapshot(snapshot => {
+        postsContainer.innerHTML = "";
+        snapshot.forEach(doc => {
+          const post = doc.data();
+          postsContainer.innerHTML += `
+            <div class="post">
+              <h3>${post.title || "Photo"} - by ${post.name || "Anonymous"}</h3>
+              <img src="${post.imageUrl}" style="max-width:100%; border-radius:10px;">
+            </div>
+          `;
+        });
+      });
+    }
+    function loadVideos() {
+      const postsContainer = document.getElementById("posts");
+      db.collection("posts").where("videoUrl", "!=", "").onSnapshot(snapshot => {
+        postsContainer.innerHTML = "";
+        snapshot.forEach(doc => {
+          const post = doc.data();
+          postsContainer.innerHTML += `
+            <div class="post">
+              <h3>${post.title || "Video"} - by ${post.name || "Anonymous"}</h3>
+              <video width="100%" controls>
+                <source src="${post.videoUrl}" type="video/mp4">
+              </video>
+            </div>
+          `;
+        });
+      });
+    }
     auth.onAuthStateChanged(user => {
       document.getElementById("auth").style.display = user ? "none" : "block";
       document.getElementById("logoutBtn").style.display = user ? "inline-block" : "none";
+      document.getElementById("newPost").style.display = user ? "block" : "none";
     });
-
     window.onload = () => {
       loadPosts();
     };
@@ -212,15 +254,13 @@ const firebaseConfig = {
       <button class="mobile-menu-btn" onclick="toggleMobileMenu()">&#9776;</button>
     </div>
   </header>
-
   <div id="mobileNav" class="mobile-nav">
-    <a href="#" onclick="document.querySelector('.left').style.display='block'">Login</a>
-    <a href="#">Lives</a>
-    <a href="#">Photos</a>
-    <a href="#">Videos</a>
-    <a href="#">Messages</a>
+    <a href="#" onclick="document.querySelector('.left').style.display='block'; closeMobileMenu(); return false;">Login</a>
+    <a href="#" onclick="loadPosts(); closeMobileMenu(); return false;">Posts</a>
+    <a href="#" onclick="loadLives(); closeMobileMenu(); return false;">Lives</a>
+    <a href="#" onclick="loadPhotos(); closeMobileMenu(); return false;">Photos</a>
+    <a href="#" onclick="loadVideos(); closeMobileMenu(); return false;">Videos</a>
   </div>
-
   <div id="main">
     <div class="left">
       <h3>Login</h3>
@@ -238,6 +278,14 @@ const firebaseConfig = {
       </div>
     </div>
     <div class="center">
+      <div id="newPost" style="display:none;">
+        <h4>Create Post</h4>
+        <input type="text" id="postTitle" placeholder="Title">
+        <textarea id="postContent" placeholder="What's on your mind?"></textarea>
+        <input type="text" id="postImageUrl" placeholder="Image URL (optional)">
+        <input type="text" id="postVideoUrl" placeholder="Video URL (optional)">
+        <button onclick="submitPost()">Post</button>
+      </div>
       <div id="posts">Loading posts...</div>
     </div>
     <div class="right">
