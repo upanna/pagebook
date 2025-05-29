@@ -8,77 +8,19 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f2f5;
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f0f2f5; }
+    header { background: #4267B2; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .mobile-menu { display: flex; justify-content: space-around; background: white; padding: 10px; border-bottom: 1px solid #ccc; flex-wrap: nowrap; }
+    .mobile-menu a { text-align: center; text-decoration: none; color: #4267B2; font-weight: bold; padding: 10px; white-space: nowrap; }
+    .section { display: none; padding: 10px; }
+    .active-section { display: block; }
+    .post, .live, .photo, .video, .message { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .post img, .post video, .photo img, .video video {
+      width: 100%; max-width: 800px; max-height: 500px; object-fit: cover; border-radius: 8px; margin-top: 10px;
     }
-    header {
-      background-color: #4267B2;
-      color: white;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .mobile-menu {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      background: white;
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
-    }
-    .mobile-menu a {
-      flex: 1;
-      text-align: center;
-      text-decoration: none;
-      color: #4267B2;
-      font-weight: bold;
-      padding: 10px;
-      border-right: 1px solid #eee;
-    }
-    .mobile-menu a:last-child {
-      border-right: none;
-    }
-    .section {
-      display: none;
-      padding: 10px;
-    }
-    .active-section {
-      display: block;
-    }
-    .post, .live, .photo, .video, .message {
-      background: white;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .actions span {
-      margin-right: 10px;
-      cursor: pointer;
-      color: #4267B2;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #4267B2;
-      color: white;
-      border: none;
-      padding: 10px;
-      width: 100%;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #loginForm {
-      padding: 10px;
-    }
+    .actions span { margin-right: 10px; cursor: pointer; color: #4267B2; }
+    input, textarea { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+    button { background: #4267B2; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -94,13 +36,25 @@
     <a href="#" onclick="showSection('videos')">Videos</a>
     <a href="#" onclick="showSection('messages')">Messages</a>
   </nav>
+
   <div id="login" class="section">
     <div id="loginForm">
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
-      <button onclick="login()">Login</button>
+      <div id="signUpSection" style="display:none;">
+        <input type="text" id="name" placeholder="Name">
+        <input type="email" id="signUpEmail" placeholder="Email">
+        <input type="password" id="signUpPassword" placeholder="Password">
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="toggleLoginSignUp()">Already have an account? Login</button>
+      </div>
+      <div id="loginSection">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button onclick="toggleLoginSignUp()">Create new account</button>
+      </div>
     </div>
   </div>
+
   <div id="posts" class="section">
     <div id="newPost" style="display:none;">
       <input type="text" id="postTitle" placeholder="Post Title">
@@ -111,11 +65,23 @@
     </div>
     <div id="postList">Loading posts...</div>
   </div>
-  <div id="lives" class="section"><div id="liveList">Loading live streams...</div></div>
+
   <div id="photos" class="section"><div id="photoList">Loading photos...</div></div>
   <div id="videos" class="section"><div id="videoList">Loading videos...</div></div>
   <div id="messages" class="section">
-    <p>Messenger Coming Soon</p>
+    <div id="messageList" style="max-height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px;"></div>
+    <input type="text" id="messageInput" placeholder="Type your message">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <div id="lives" class="section">
+    <div id="liveList">Loading live streams...</div>
+    <div id="liveUpload" style="display:none;">
+      <h3>Go Live</h3>
+      <input type="text" id="liveName" placeholder="Live Stream Name">
+      <button onclick="generateStream()">Generate Stream</button>
+      <div id="streamInfo"></div>
+    </div>
   </div>
 
   <script>
@@ -131,107 +97,183 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    function showSection(id) {
-      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
-      document.getElementById(id).classList.add('active-section');
+    function toggleLoginSignUp() {
+      const s = document.getElementById('signUpSection');
+      const l = document.getElementById('loginSection');
+      s.style.display = s.style.display === 'none' ? 'block' : 'none';
+      l.style.display = l.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function signUp() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("signUpEmail").value;
+      const password = document.getElementById("signUpPassword").value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(user => user.user.updateProfile({ displayName: name }))
+        .then(() => alert("Signed Up"))
+        .catch(err => alert(err.message));
     }
 
     function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password).catch(e => alert(e.message));
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => alert("Logged In"))
+        .catch(err => alert(err.message));
     }
-    function logout() {
-      auth.signOut();
+
+    function logout() { auth.signOut(); }
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+      document.getElementById(id).classList.add('active-section');
     }
+
     function submitPost() {
-      const title = document.getElementById("postTitle").value;
-      const content = document.getElementById("postContent").value;
-      const imageUrl = document.getElementById("postImageUrl").value;
-      const videoUrl = document.getElementById("postVideoUrl").value;
       const user = auth.currentUser;
-      if (!user) return alert("Please login first");
+      if (!user) return;
       db.collection("posts").add({
-        title, content, imageUrl, videoUrl,
-        name: user.email,
+        title: postTitle.value,
+        content: postContent.value,
+        imageUrl: postImageUrl.value,
+        videoUrl: postVideoUrl.value,
+        likes: 0,
+        name: user.displayName || user.email,
+        uid: user.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => alert("Posted!"));
+      });
+    }
+
+    function editPost(id, t, c, img, vid) {
+      const newT = prompt("Edit Title", t);
+      const newC = prompt("Edit Content", c);
+      if (newT && newC) db.collection("posts").doc(id).update({ title: newT, content: newC });
+    }
+
+    function deletePost(id) {
+      if (confirm("Delete this post?")) db.collection("posts").doc(id).delete();
+    }
+
+    function likePost(id) {
+      db.collection("posts").doc(id).update({ likes: firebase.firestore.FieldValue.increment(1) });
     }
 
     function loadPosts() {
-      const list = document.getElementById("postList");
       db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        list.innerHTML = "";
+        postList.innerHTML = "";
         snapshot.forEach(doc => {
           const d = doc.data();
-          list.innerHTML += `<div class='post'><h3>${d.title}</h3><p>${d.content}</p>
-          ${d.imageUrl ? `<img src='${d.imageUrl}' width='100%'>` : ''}
-          ${d.videoUrl ? `<video width='100%' controls src='${d.videoUrl}'></video>` : ''}
-          <div class='actions'>
-          <span onclick="alert('Liked!')">Like</span>
-          <span onclick="alert('Comment!')">Comment</span>
-          <span onclick="alert('Sent!')">Send</span>
-          <span onclick="alert('Shared!')">Share</span>
-          </div></div>`
+          const owner = auth.currentUser && auth.currentUser.uid === d.uid;
+          postList.innerHTML += `<div class='post'>
+            <h3>${d.title}</h3>
+            <p>${d.content}</p>
+            ${d.imageUrl ? `<img src='${d.imageUrl}'>` : ''}
+            ${d.videoUrl ? `<video src='${d.videoUrl}' controls></video>` : ''}
+            <div class='actions'>
+              <span onclick="likePost('${doc.id}')">Like (${d.likes || 0})</span>
+              <span onclick="sendMessageText('${d.content}')">Send</span>
+              <span onclick="sharePost('${d.imageUrl || d.videoUrl || ''}')">Share</span>
+              ${owner ? `<span onclick="editPost('${doc.id}','${d.title}','${d.content}','${d.imageUrl}','${d.videoUrl}')">Edit</span>
+              <span onclick="deletePost('${doc.id}')">Delete</span>` : ''}
+            </div>
+          </div>`;
+        });
+      });
+    }
+
+    function sendMessage() {
+      const user = auth.currentUser;
+      const content = messageInput.value;
+      if (!user || !content) return;
+      db.collection("messages").add({ name: user.displayName || user.email, content, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      messageInput.value = "";
+    }
+
+    function sendMessageText(text) {
+      const user = auth.currentUser;
+      if (!user || !text) return;
+      db.collection("messages").add({ name: user.displayName || user.email, content: text, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+
+    function sharePost(url) {
+      const u = encodeURIComponent(url);
+      const fb = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+      const tg = `https://t.me/share/url?url=${u}`;
+      window.open(fb, '_blank');
+      window.open(tg, '_blank');
+    }
+
+    function loadMessages() {
+      db.collection("messages").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        messageList.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          messageList.innerHTML = `<p><strong>${d.name}</strong>: ${d.content}</p>` + messageList.innerHTML;
         });
       });
     }
 
     function loadPhotos() {
-      const list = document.getElementById("photoList");
-      db.collection("posts").where("imageUrl", "!=", "").onSnapshot(snapshot => {
-        list.innerHTML = "";
-        snapshot.forEach(doc => {
+      db.collection("posts").where("imageUrl", "!=", "").onSnapshot(s => {
+        photoList.innerHTML = "";
+        s.forEach(doc => {
           const d = doc.data();
-          list.innerHTML += `<div class='photo'><img src='${d.imageUrl}' width='100%'></div>`
+          photoList.innerHTML += `<div class='photo'><img src='${d.imageUrl}'></div>`;
         });
       });
     }
 
     function loadVideos() {
-      const list = document.getElementById("videoList");
-      db.collection("posts").where("videoUrl", "!=", "").onSnapshot(snapshot => {
-        list.innerHTML = "";
-        snapshot.forEach(doc => {
+      db.collection("posts").where("videoUrl", "!=", "").onSnapshot(s => {
+        videoList.innerHTML = "";
+        s.forEach(doc => {
           const d = doc.data();
-          list.innerHTML += `<div class='video'><video width='100%' controls src='${d.videoUrl}'></video></div>`
+          videoList.innerHTML += `<div class='video'><video src='${d.videoUrl}' controls></video></div>`;
         });
       });
     }
 
+    function generateStream() {
+      const name = liveName.value;
+      const user = auth.currentUser;
+      const key = Math.random().toString(36).substring(2, 15);
+      const streamURL = `https://your-web-player.com/stream/${user.uid}`;
+      const rtmp = `rtmp://your-rtmp-server.com/live/${key}`;
+      db.collection("live").doc(user.uid).set({
+        name, streamURL, rtmpKey: key, rtmpURL: rtmp, owner: user.displayName || user.email, active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      streamInfo.innerHTML = `<p>Watch: ${streamURL}</p><p>Key: ${key}</p><p>RTMP: ${rtmp}</p>`;
+    }
+
     function loadLives() {
-      const list = document.getElementById("liveList");
-      db.collection("lives").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        list.innerHTML = "";
+      db.collection("live").where("active", "==", true).onSnapshot(snapshot => {
+        liveList.innerHTML = "";
         snapshot.forEach(doc => {
           const d = doc.data();
-          list.innerHTML += `<div class='live'><iframe width='100%' height='200' src='${d.videoUrl}' frameborder='0' allowfullscreen></iframe></div>`
+          liveList.innerHTML += `<div class='live'>
+            <h4>${d.name}</h4>
+            <p><strong>${d.owner}</strong></p>
+            <a href='${d.streamURL}' target='_blank'>Watch Live</a>
+          </div>`;
         });
       });
     }
 
     auth.onAuthStateChanged(user => {
-  const postForm = document.getElementById("newPost");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const loginForm = document.getElementById("loginForm");
-  if (user) {
-    postForm.style.display = "block";
-    logoutBtn.style.display = "inline-block";
-    loginForm.style.display = "none";
-  } else {
-    postForm.style.display = "none";
-    logoutBtn.style.display = "none";
-    loginForm.style.display = "block";
-  }
-});
+      logoutBtn.style.display = user ? 'inline-block' : 'none';
+      newPost.style.display = user ? 'block' : 'none';
+      liveUpload.style.display = user ? 'block' : 'none';
+    });
 
     window.onload = () => {
       showSection('posts');
       loadPosts();
-      loadLives();
       loadPhotos();
       loadVideos();
-    };
+      loadMessages();
+      loadLives();
+    }
   </script>
 </body>
 </html>
