@@ -14,7 +14,7 @@
     .mobile-menu a { text-align: center; text-decoration: none; color: #4267B2; font-weight: bold; padding: 10px; white-space: nowrap; }
     .section { display: none; padding: 10px; }
     .active-section { display: block; }
-    .post, .live, .photo, .video, .message { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .post, .live, .photo, .video { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .post img, .post video, .photo img, .video video {
       width: 100%; max-width: 800px; max-height: 500px; object-fit: cover; border-radius: 8px; margin-top: 10px;
     }
@@ -29,12 +29,12 @@
     <button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
   </header>
   <nav class="mobile-menu">
-    <a href="#" onclick="showSection('login')">Login</a>
+    <a href="#" id="loginMenu" onclick="showSection('login')">Login</a>
     <a href="#" onclick="showSection('posts')">Posts</a>
     <a href="#" onclick="showSection('lives')">Lives</a>
     <a href="#" onclick="showSection('photos')">Photos</a>
     <a href="#" onclick="showSection('videos')">Videos</a>
-    <a href="#" onclick="showSection('messages')">Messages</a>
+    <a href="#" onclick="showSection('messages')">Chat</a>
   </nav>
 
   <div id="login" class="section">
@@ -69,9 +69,7 @@
   <div id="photos" class="section"><div id="photoList">Loading photos...</div></div>
   <div id="videos" class="section"><div id="videoList">Loading videos...</div></div>
   <div id="messages" class="section">
-    <div id="messageList" style="max-height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px;"></div>
-    <input type="text" id="messageInput" placeholder="Type your message">
-    <button onclick="sendMessage()">Send</button>
+    <iframe src="https://rumbletalk.com/client/chat.php?2qHSKS!f" style="width:100%; height:500px; border:none;"></iframe>
   </div>
 
   <div id="lives" class="section">
@@ -144,16 +142,6 @@
       });
     }
 
-    function editPost(id, t, c, img, vid) {
-      const newT = prompt("Edit Title", t);
-      const newC = prompt("Edit Content", c);
-      if (newT && newC) db.collection("posts").doc(id).update({ title: newT, content: newC });
-    }
-
-    function deletePost(id) {
-      if (confirm("Delete this post?")) db.collection("posts").doc(id).delete();
-    }
-
     function likePost(id) {
       db.collection("posts").doc(id).update({ likes: firebase.firestore.FieldValue.increment(1) });
     }
@@ -171,44 +159,8 @@
             ${d.videoUrl ? `<video src='${d.videoUrl}' controls></video>` : ''}
             <div class='actions'>
               <span onclick="likePost('${doc.id}')">Like (${d.likes || 0})</span>
-              <span onclick="sendMessageText('${d.content}')">Send</span>
-              <span onclick="sharePost('${d.imageUrl || d.videoUrl || ''}')">Share</span>
-              ${owner ? `<span onclick="editPost('${doc.id}','${d.title}','${d.content}','${d.imageUrl}','${d.videoUrl}')">Edit</span>
-              <span onclick="deletePost('${doc.id}')">Delete</span>` : ''}
             </div>
           </div>`;
-        });
-      });
-    }
-
-    function sendMessage() {
-      const user = auth.currentUser;
-      const content = messageInput.value;
-      if (!user || !content) return;
-      db.collection("messages").add({ name: user.displayName || user.email, content, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      messageInput.value = "";
-    }
-
-    function sendMessageText(text) {
-      const user = auth.currentUser;
-      if (!user || !text) return;
-      db.collection("messages").add({ name: user.displayName || user.email, content: text, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-    }
-
-    function sharePost(url) {
-      const u = encodeURIComponent(url);
-      const fb = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
-      const tg = `https://t.me/share/url?url=${u}`;
-      window.open(fb, '_blank');
-      window.open(tg, '_blank');
-    }
-
-    function loadMessages() {
-      db.collection("messages").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        messageList.innerHTML = "";
-        snapshot.forEach(doc => {
-          const d = doc.data();
-          messageList.innerHTML = `<p><strong>${d.name}</strong>: ${d.content}</p>` + messageList.innerHTML;
         });
       });
     }
@@ -264,6 +216,15 @@
       logoutBtn.style.display = user ? 'inline-block' : 'none';
       newPost.style.display = user ? 'block' : 'none';
       liveUpload.style.display = user ? 'block' : 'none';
+
+      const loginMenu = document.getElementById("loginMenu");
+      if (user) {
+        loginMenu.innerText = "Logout";
+        loginMenu.onclick = () => logout();
+      } else {
+        loginMenu.innerText = "Login";
+        loginMenu.onclick = () => showSection('login');
+      }
     });
 
     window.onload = () => {
@@ -271,7 +232,6 @@
       loadPosts();
       loadPhotos();
       loadVideos();
-      loadMessages();
       loadLives();
     }
   </script>
