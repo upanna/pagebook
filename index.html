@@ -1,270 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PageBook</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PageBook - Firebase All-in-One</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f0f2f5; }
-    header { background: #4267B2; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-    nav { display: flex; flex-wrap: wrap; justify-content: space-around; background: white; border-bottom: 1px solid #ccc; }
-    nav a { padding: 10px; text-decoration: none; color: #4267B2; font-weight: bold; }
-    .section { display: none; padding: 10px; }
-    .active { display: block; }
-    .hidden { display: none !important; }
-    .post img, .video video { max-height: 2in; width: auto; object-fit: contain; border-radius: 8px; margin-top: 10px; }
-    .post, .video, .photo, .live { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    #photoList, #videoList { display: flex; flex-wrap: wrap; gap: 10px; }
-    .photo img, .video iframe { height: 2in; width: auto; border-radius: 8px; object-fit: contain; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; }
+    header { background: #3b5998; color: white; padding: 15px 20px; display: flex; justify-content: space-between; }
+    nav a { margin-left: 10px; color: white; cursor: pointer; }
+    section { display: none; max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; }
+    .post { border: 1px solid #ccc; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
+    .post h3 { margin: 0; }
+    input, textarea, button { width: 100%; padding: 10px; margin: 10px 0; }
+    button { background: #1877f2; color: white; border: none; cursor: pointer; }
+    button:hover { background: #145dbf; }
   </style>
 </head>
-<body>
-<header>
-  <div>PageBook</div>
-  <button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
-</header>
-<nav>
-  <a href="#" onclick="showSection('login')" id="loginLink">Login</a>
-  <a href="#" onclick="showSection('posts')">Posts</a>
-  <a href="#" onclick="showSection('lives')">Lives</a>
-  <a href="#" onclick="showSection('photos')">Photos</a>
-  <a href="#" onclick="showSection('videos')">Videos</a>
-  <a href="#" onclick="showSection('profile')" id="profileTab" class="hidden">Profile</a>
-  <a href="#" onclick="showSection('chat')" id="chatTab" class="hidden">Chat</a>
-</nav>
-<div id="login" class="section active">
-  <div id="loginSection">
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginPassword" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p><a href="#" onclick="toggleLoginSignUp(true)">Don't have an account? Sign Up</a></p>
-  </div>
-  <div id="signUpSection" class="hidden">
-    <input type="text" id="signUpName" placeholder="Full Name">
-    <input type="email" id="signUpEmail" placeholder="Email">
-    <input type="password" id="signUpPassword" placeholder="Password">
-    <input type="text" id="signUpPhoto" placeholder="Photo URL (optional)">
-    <button onclick="signUp()">Sign Up</button>
-    <p><a href="#" onclick="toggleLoginSignUp(false)">Already have an account? Login</a></p>
-  </div>
-</div>
-<div id="posts" class="section">
-  <div id="newPostForm" class="hidden">
-    <input type="text" id="postTitle" placeholder="Title">
-    <textarea id="postContent" placeholder="Say something..."></textarea>
-    <input type="text" id="postImageUrl" placeholder="Image Link (comma-separated)">
-    <input type="text" id="postVideoUrl" placeholder="Video Link">
-    <input type="text" id="postTag" placeholder="Tag (optional)">
-    <button onclick="submitPost()">Send Post</button>
-  </div>
-  <div id="postList">Loading posts...</div>
-</div>
-<div id="lives" class="section">
-  <div id="liveList">Loading live streams...</div>
-  <div id="liveForm" class="hidden">
-    <h3>Go Live</h3>
-    <input type="text" id="liveName" placeholder="Live Name">
-    <input type="text" id="watchLink" placeholder="Watch TV Link">
-    <input type="text" id="rtmpUrl" placeholder="RTMP URL">
-    <input type="text" id="streamKey" placeholder="Stream Key">
-    <button onclick="submitLive()">Start Stream</button>
-  </div>
-</div>
-<div id="photos" class="section"><div id="photoList">Loading photos...</div></div>
-<div id="videos" class="section"><div id="videoList">Loading videos...</div></div>
-<div id="chat" class="section hidden">
-  <h3>Group Chat</h3>
-  <div id="chatBox" style="height:300px; overflow-y:scroll; background:#fff; padding:10px; border:1px solid #ccc;"></div>
-  <input type="text" id="chatMessage" placeholder="Type your message...">
-  <button onclick="sendMessage()">Send</button>
-</div>
-<div id="profile" class="section hidden">
-  <div id="profileInfo">Loading profile...</div>
-  <input type="text" id="profileImage" placeholder="Image Link (Photo URL)">
-  <input type="text" id="newName" placeholder="New Name">
-  <input type="password" id="oldPassword" placeholder="Old Password">
-  <input type="password" id="newPassword" placeholder="New Password">
-  <button onclick="updateProfile()">Update Profile</button>
-</div>
-<script>
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
-  authDomain: "weminthu-2b12a.firebaseapp.com",
-  projectId: "weminthu-2b12a",
-  storageBucket: "weminthu-2b12a.appspot.com",
-  messagingSenderId: "181634107230",
-  appId: "1:181634107230:web:9fb4cfb725b1b5cd1bf1cf",
-  measurementId: "G-VFYC7DEVM1"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
 
-function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-function toggleLoginSignUp(showSignUp) {
-  document.getElementById('loginSection').classList.toggle('hidden', showSignUp);
-  document.getElementById('signUpSection').classList.toggle('hidden', !showSignUp);
-}
-function signUp() {
-  const name = document.getElementById('signUpName').value;
-  const email = document.getElementById('signUpEmail').value;
-  const password = document.getElementById('signUpPassword').value;
-  const photo = document.getElementById('signUpPhoto').value;
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(userCred => userCred.user.updateProfile({ displayName: name, photoURL: photo }))
-    .then(() => alert('Signed up!'))
-    .catch(err => alert(err.message));
-}
-function login() {
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  auth.signInWithEmailAndPassword(email, password)
-    .then(() => alert('Logged in!'))
-    .catch(err => alert(err.message));
-}
-function logout() { auth.signOut(); }
-function submitPost() {
-  const user = auth.currentUser;
-  if (!user) return;
-  db.collection("posts").add({
-    uid: user.uid,
-    name: user.displayName || user.email,
-    title: postTitle.value,
-    content: postContent.value,
-    imageUrl: postImageUrl.value,
-    videoUrl: postVideoUrl.value,
-    tag: postTag.value,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-function submitLive() {
-  const user = auth.currentUser;
-  if (!user) return;
-  db.collection("live").doc(user.uid).set({
-    uid: user.uid,
-    owner: user.displayName || user.email,
-    name: liveName.value,
-    streamURL: watchLink.value,
-    rtmpURL: rtmpUrl.value,
-    streamKey: streamKey.value,
-    active: true,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-function updateProfile() {
-  const user = auth.currentUser;
-  const newName = document.getElementById('newName').value;
-  const newPassword = document.getElementById('newPassword').value;
-  const oldPassword = document.getElementById('oldPassword').value;
-  const newPhoto = document.getElementById('profileImage').value;
-  const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
-  user.reauthenticateWithCredential(cred).then(() => {
-    if (newName || newPhoto) user.updateProfile({ displayName: newName, photoURL: newPhoto });
-    if (newPassword) user.updatePassword(newPassword);
-    alert("Profile updated");
-  }).catch(err => alert("Re-auth failed: " + err.message));
-}
-function sendMessage() {
-  const user = auth.currentUser;
-  const text = document.getElementById("chatMessage").value;
-  if (!user || !text) return;
-  db.collection("messages").add({
-    uid: user.uid,
-    name: user.displayName || user.email,
-    text,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  document.getElementById("chatMessage").value = "";
-}
-function loadChat() {
-  db.collection("messages").orderBy("createdAt").onSnapshot(snapshot => {
-    const chatBox = document.getElementById("chatBox");
-    chatBox.innerHTML = "";
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      chatBox.innerHTML += `<p><strong>${d.name}</strong>: ${d.text}</p>`;
-    });
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-}
-function loadPosts(onlyMine = false) {
-  let ref = db.collection("posts").orderBy("createdAt", "desc");
-  const user = auth.currentUser;
-  if (onlyMine && user) ref = ref.where("uid", "==", user.uid);
-  ref.onSnapshot(snapshot => {
-    const list = document.getElementById('postList');
-    list.innerHTML = '';
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      list.innerHTML += `<div class='post'><h3>${d.title}</h3><p>${d.content}</p>${d.imageUrl ? `<img src='${d.imageUrl}'>` : ''}${d.videoUrl ? `<video src='${d.videoUrl}' controls></video>` : ''}</div>`;
-    });
-  });
-}
-function loadPhotos() {
-  db.collection("posts").where("imageUrl", "!=", "").onSnapshot(snap => {
-    const photoList = document.getElementById('photoList');
-    photoList.innerHTML = "";
-    snap.forEach(doc => {
-      const d = doc.data();
-      photoList.innerHTML += `<div class='photo'><img src='${d.imageUrl}'></div>`;
-    });
-  });
-}
-function loadVideos() {
-  db.collection("posts").where("videoUrl", "!=", "").onSnapshot(snap => {
-    const videoList = document.getElementById('videoList');
-    videoList.innerHTML = "";
-    snap.forEach(doc => {
-      const d = doc.data();
-      videoList.innerHTML += `<div class='video'><iframe width='100%' height='200' src='${d.videoUrl}' frameborder='0' allowfullscreen></iframe></div>`;
-    });
-  });
-}
-function showLiveStreams() {
-  const fallbackLives = [
-    { name: "24/7 Music", streamURL: "https://www.youtube.com/embed/5qap5aO4i9A" },
-    { name: "24/7 Nature", streamURL: "https://www.youtube.com/embed/eX2qFMC8cFo" }
-  ];
-  const liveList = document.getElementById('liveList');
-  db.collection("live").where("active", "==", true).onSnapshot(snap => {
-    liveList.innerHTML = "";
-    if (snap.empty) {
-      fallbackLives.forEach(d => {
-        liveList.innerHTML += `<div class='live'><h4>${d.name}</h4><iframe width='100%' height='200' src='${d.streamURL}' frameborder='0' allowfullscreen></iframe></div>`;
-      });
-    } else {
-      snap.forEach(doc => {
-        const d = doc.data();
-        liveList.innerHTML += `<div class='live'><h4>${d.name}</h4><iframe width='100%' height='200' src='${d.streamURL}' frameborder='0' allowfullscreen></iframe></div>`;
+<body onload="loadPosts()">
+  <header>
+    <h1>PageBook</h1>
+    <nav>
+      <a onclick="showSection('home')">Home</a>
+      <a onclick="showSection('post')">Post</a>
+      <a onclick="showSection('login')">Login</a>
+    </nav>
+  </header>
+
+  <section id="home" style="display:block">
+    <h2>Recent Posts</h2>
+    <div id="recentPosts">Loading...</div>
+  </section>
+
+  <section id="post">
+    <h2>Create a Post</h2>
+    <input id="postTitle" placeholder="Title">
+    <textarea id="postContent" placeholder="What's on your mind?"></textarea>
+    <input id="postImage" placeholder="Image URL (optional)">
+    <button onclick="createPost()">Post</button>
+  </section>
+
+  <section id="login">
+    <h2>Login</h2>
+    <input id="loginEmail" placeholder="Email">
+    <input id="loginPassword" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </section>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
+      authDomain: "weminthu-2b12a.firebaseapp.com",
+      projectId: "weminthu-2b12a",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    function showSection(id) {
+      document.querySelectorAll("section").forEach(s => s.style.display = "none");
+      document.getElementById(id).style.display = "block";
+    }
+
+    function loadPosts() {
+      const container = document.getElementById("recentPosts");
+      container.innerHTML = "Loading...";
+      db.collection("posts").orderBy("time", "desc").get().then(snapshot => {
+        container.innerHTML = "";
+        snapshot.forEach(doc => {
+          const p = doc.data();
+          const div = document.createElement("div");
+          div.className = "post";
+          div.innerHTML = `<h3>${p.title}</h3><p>${p.content}</p>${p.image ? `<img src="${p.image}" style="max-width:100%">` : ""}`;
+          container.appendChild(div);
+        });
       });
     }
-  });
-}
-auth.onAuthStateChanged(user => {
-  const loggedIn = !!user;
-  document.getElementById('logoutBtn').style.display = loggedIn ? 'inline' : 'none';
-  document.getElementById('profileTab').classList.toggle('hidden', !loggedIn);
-  document.getElementById('chatTab').classList.toggle('hidden', !loggedIn);
-  document.getElementById('newPostForm').classList.toggle('hidden', !loggedIn);
-  document.getElementById('liveForm').classList.toggle('hidden', !loggedIn);
-  if (loggedIn) {
-    loadPosts(true);
-    loadChat();
-    document.getElementById('login').classList.add('hidden');
-    document.getElementById('profileInfo').innerHTML = `<img src='${user.photoURL || "https://via.placeholder.com/100"}' style='height:80px;border-radius:50%;'><p>${user.displayName}</p><p>${user.email}</p>`;
-  } else {
-    loadPosts(false);
-    showSection('login');
-  }
-  showLiveStreams();
-  loadPhotos();
-  loadVideos();
-});
-</script>
+
+    function createPost() {
+      const title = document.getElementById("postTitle").value;
+      const content = document.getElementById("postContent").value;
+      const image = document.getElementById("postImage").value;
+      const user = auth.currentUser;
+
+      if (!user) return alert("Login first");
+
+      db.collection("posts").add({
+        title,
+        content,
+        image,
+        time: firebase.firestore.FieldValue.serverTimestamp(),
+        name: user.email
+      }).then(() => {
+        alert("Posted!");
+        loadPosts();
+        showSection("home");
+      });
+    }
+
+    function login() {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          alert("Logged in!");
+          showSection("post");
+        })
+        .catch(err => alert(err.message));
+    }
+  </script>
+</body>
+</html>
