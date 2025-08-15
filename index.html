@@ -1,120 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PageBook - Firebase All-in-One</title>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
-  <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; }
-    header { background: #3b5998; color: white; padding: 15px 20px; display: flex; justify-content: space-between; }
-    nav a { margin-left: 10px; color: white; cursor: pointer; }
-    section { display: none; max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; }
-    .post { border: 1px solid #ccc; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
-    .post h3 { margin: 0; }
-    input, textarea, button { width: 100%; padding: 10px; margin: 10px 0; }
-    button { background: #1877f2; color: white; border: none; cursor: pointer; }
-    button:hover { background: #145dbf; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>သွန်း အွန်လိုင်းစတိုး</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Padauk', sans-serif;
+            background-color: #f8f4e8;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .payment-method {
+            transition: all 0.3s ease;
+        }
+        .payment-method:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
 </head>
+<body class="text-gray-800">
+    <!-- Header Section -->
+    <header class="bg-amber-800 text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="image1.jpg" alt="သွန်းစတိုး၏လိုဂို" class="h-10 w-10 mr-3 rounded-full">
+                <h1 class="text-xl md:text-2xl font-bold">သွန်း</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6">
+                    <li><a href="#" class="hover:text-amber-200">ပင်မစာမျက်နှာ</a></li>
+                    <li><a href="#" class="hover:text-amber-200">ပစ္စည်းများ</a></li>
+                    <li><a href="#" class="hover:text-amber-200">အကြောင်း</a></li>
+                    <li><a href="#" class="hover:text-amber-200">ဆက်သွယ်ရန်</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-<body onload="loadPosts()">
-  <header>
-    <h1>PageBook</h1>
-    <nav>
-      <a onclick="showSection('home')">Home</a>
-      <a onclick="showSection('post')">Post</a>
-      <a onclick="showSection('login')">Login</a>
-    </nav>
-  </header>
+    <!-- Featured Products -->
+    <section class="container mx-auto px-4 py-12">
+        <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center border-b-2 border-amber-200 pb-4"> သွန်း အွန်လိုင်းစတိုး</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Product 1 -->
+            <div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+                <div class="relative">
+                    <img src="thon4.jpg" alt=" သွန်းအဝ်ဆိုင်" class="w-full h-64 object-cover">
+                    <span class="absolute top-2 right-2 bg-amber-600 text-white px-3 py-1 rounded-full text-sm">အသစ်</span>
+                </div>
+                <div class="p-6">
+                    <h3 class="font-bold text-xl mb-2">ဝမ်းဆက်အလှဝတ်</h3>
+                    <p class="text-gray-600 mb-4">အသားလေးအိပြီး ဝတ်၍ကောင်းသော ဝမ်းဆက်အလှ</p>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg text-amber-800">၅၀၀၀ ကျပ်</span>
+                        <button class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition">ဈေးခြင်းထဲထည့်ရန်</button>
+                    </div>
+                </div>
+            </div>
 
-  <section id="home" style="display:block">
-    <h2>Recent Posts</h2>
-    <div id="recentPosts">Loading...</div>
-  </section>
+            <!-- Product 2 -->
+            <div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+                <div class="relative">
+                    <img src="  thon1.jpg" alt=" ချည်သားအစစ်" class="w-full h-64 object-cover">
+                    <span class="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm">ရောင်းအားကောင်း</span>
+                </div>
+                <div class="p-6">
+                    <h3 class="font-bold text-xl mb-2">ချည်သားအလှဝ်</h3>
+                    <p class="text-gray-600 mb-4">ချည်မှချည်ဆိုတဲ့ တီတီ မမများအတွက် ချည်သားအစစ်လေးပါ။</p>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg text-amber-800"> ၇၀၀၀ ကျပ်</span>
+                        <button class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition">ဈေးခြင်းထဲထည့်ရန်</button>
+                    </div>
+                </div>
+            </div>
 
-  <section id="post">
-    <h2>Create a Post</h2>
-    <input id="postTitle" placeholder="Title">
-    <textarea id="postContent" placeholder="What's on your mind?"></textarea>
-    <input id="postImage" placeholder="Image URL (optional)">
-    <button onclick="createPost()">Post</button>
-  </section>
+            <!-- Product 3 -->
+            <div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+                <img src=" thon2.jpg" alt="Thone" class="w-full h-64 object-cover">
+                <div class="p-6">
+                    <h3 class="font-bold text-xl mb-2">ကချင်ထည်လုံချည်</h3>
+                    <p class="text-gray-600 mb-4">ကရမက်အင်ဒိုပါထိုင်း၊ ပါတိတ်ဝမ်းဆက်ချည်စစ်စစ်</p>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg text-amber-800"> ၇၀၀၀ ကျပ်</span>
+                        <button class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition">ဈေးခြင်းထဲထည့်ရန်</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-  <section id="login">
-    <h2>Login</h2>
-    <input id="loginEmail" placeholder="Email">
-    <input id="loginPassword" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-  </section>
+    <!-- Payment Methods -->
+    <section class="bg-gray-100 py-12">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">ငွေပေးချေမှုနည်းလမ်းများ</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                <!-- KBZ Pay -->
+                <div class="payment-method bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-amber-400 cursor-pointer">
+                    <div class="flex items-center mb-4">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b1e2831f-e9e7-4ffe-a677-28ab704582e3.png" alt="KBZ Pay လိုဂို - အပြာရောင်နှင့် အဖြူရောင်အရုပ်စာလုံး" class="h-12 w-12 mr-4">
+                        <h3 class="font-bold text-xl">KBZ Pay</h3>
+                    </div>
+                    <p class="mb-4">KBZ Pay ဖြင့် ငွေလွှဲရန် အောက်ပါဖုန်းနံပါတ်သို့ လွှဲပါ</p>
+                    <div class="bg-gray-50 p-4 rounded">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold">ဖုန်းနံပါတ်</span>
+                            <span class="text-lg">၀၉ ၇၈၈-၀၉၉-၁၁၈</span>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">လွှဲပြီးပါက order number ကို ပေးပို့ပါ</div>
+                    </div>
+                </div>
 
-  <script>
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBevLNp5ZnrnBol3Kp0FCR_uyS1eqcWQCY",
-      authDomain: "weminthu-2b12a.firebaseapp.com",
-      projectId: "weminthu-2b12a",
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+                <!-- Wave Money -->
+                <div class="payment-method bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-amber-400 cursor-pointer">
+                    <div class="flex items-center mb-4">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c2a91f20-d615-4acc-83a6-fe258dd2b6b2.png" alt="Wave Money လိုဂို - ခရမ်းရောင်နှင့်အဖြူရောင်လှိုင်းပုံ" class="h-12 w-12 mr-4">
+                        <h3 class="font-bold text-xl">Wave Money</h3>
+                    </div>
+                    <p class="mb-4">Wave Pay ဖြင့် ငွေလွှဲရန် အောက်ပါဖုန်းနံပါတ်သို့ လွှဲပါ</p>
+                    <div class="bg-gray-50 p-4 rounded">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold">ဖုန်းနံပါတ်</span>
+                            <span class="text-lg">၀၉၉၆၀-၂၀-၉၆၉၃</span>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">လွှဲပြီးပါက order number ကို ပေးပို့ပါ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    function showSection(id) {
-      document.querySelectorAll("section").forEach(s => s.style.display = "none");
-      document.getElementById(id).style.display = "block";
-    }
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">သွန်း</h3>
+                    <p>ရှေးမြန်မာ့ အနုပညာလက်ရာများကို ခေတ်မီဒီဇိုင်းများနှင့် ပေါင်းစပ်ထားသော ပစ္စည်းများ</p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">ဆက်သွယ်ရန်</h3>
+                    <ul class="space-y-2">
+                        <li>ဖုန်း - ၀၉ ၂၅၄၃၆၇၈၉၀</li>
+                        <li>အီးမေးလ် - info@thone.nyaunglebin.com</li>
+                        <li>လိပ်စာ - စံပြ ၂ လမ်း၊ မြို့မ ၅ ရပ်ကွက်၊ ညောင်လေးပင်မြို့</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">လိုင်းချိတ်များ</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:text-amber-300">ဝယ်ယူနည်း</a></li>
+                        <li><a href="#" class="hover:text-amber-300">ပစ္စည်းအခြေအနေ</a></li>
+                        <li><a href="#" class="hover:text-amber-300">ပြန်လည်ရောင်းချခွင့်</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p>© 2023 သွန်း. အခွင့်အရေးအားလုံးလုံခြုံသည်။</p>
+            </div>
+        </div>
+    </footer>
 
-    function loadPosts() {
-      const container = document.getElementById("recentPosts");
-      container.innerHTML = "Loading...";
-      db.collection("posts").orderBy("time", "desc").get().then(snapshot => {
-        container.innerHTML = "";
-        snapshot.forEach(doc => {
-          const p = doc.data();
-          const div = document.createElement("div");
-          div.className = "post";
-          div.innerHTML = `<h3>${p.title}</h3><p>${p.content}</p>${p.image ? `<img src="${p.image}" style="max-width:100%">` : ""}`;
-          container.appendChild(div);
+    <script>
+        // Cart functionality
+        document.querySelectorAll('button').forEach(button => {
+            if (button.textContent.includes('ဈေးခြင်းထဲထည့်ရန်')) {
+                button.addEventListener('click', function() {
+                    const productName = this.closest('.product-card').querySelector('h3').textContent;
+                    const productPrice = this.closest('.product-card').querySelector('span').textContent;
+                    
+                    alert(`${productName}\n${productPrice} ကို ဈေးခြင်းထဲ ထည့်ထားပါပြီ။\n\nငွေပေးချေမှုနည်းလမ်းများသို့ ဆက်လုပ်ဆောင်ပါ။`);
+                });
+            }
         });
-      });
-    }
 
-    function createPost() {
-      const title = document.getElementById("postTitle").value;
-      const content = document.getElementById("postContent").value;
-      const image = document.getElementById("postImage").value;
-      const user = auth.currentUser;
-
-      if (!user) return alert("Login first");
-
-      db.collection("posts").add({
-        title,
-        content,
-        image,
-        time: firebase.firestore.FieldValue.serverTimestamp(),
-        name: user.email
-      }).then(() => {
-        alert("Posted!");
-        loadPosts();
-        showSection("home");
-      });
-    }
-
-    function login() {
-      const email = document.getElementById("loginEmail").value;
-      const password = document.getElementById("loginPassword").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          alert("Logged in!");
-          showSection("post");
-        })
-        .catch(err => alert(err.message));
-    }
-  </script>
+        // Payment method selection
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', function() {
+                const provider = this.querySelector('h3').textContent;
+                const phoneNumber = "၀၉၉၆၀၂၀၉၆၉၃";
+                
+                alert(`${provider} ဖြင့်ငွေလွှဲရန်\n\nဖုန်းနံပါတ်: ${phoneNumber}\n\nလွှဲပြီးပါက order number နှင့်အတူ screen shot ပို့ပါ။`);
+            });
+        });
+    </script>
 </body>
 </html>
+
